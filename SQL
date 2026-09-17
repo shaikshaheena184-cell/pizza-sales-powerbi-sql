@@ -1,0 +1,212 @@
+create table  pizza_sale(
+order_id int primary key,
+order_date date,
+order_time time,
+pizza_id varchar(10),
+pizza_name varchar(100),
+pizza_category varchar(40),
+pizza_size varchar(10),
+quantity int,
+unit_price decimal(10,2),
+total_price decimal(10,2)
+); 
+
+#DATA VALIDATION
+#0
+select count(*) as total_rows from pizza_sale;
+#1
+select * from pizza_sale limit 10;
+#2
+select min(order_date) as first_date ,max(order_date) as last_date from pizza_sale;
+#3
+select count(distinct order_id) as total_orders from pizza_sale;
+#4
+select distinct pizza_category from pizza_sale;
+#5
+select distinct pizza_size from pizza_sale;
+
+#KPI'S
+#6
+select round(sum(total_price),2) as total_revenue from pizza_sale;
+
+#7
+select sum(quantity) as total_pizza_sold from pizza_sale;
+
+#8
+select round(sum(total_price)/count(distinct order_id),2) as avg_order_value from pizza_sale;
+
+#9
+select round(sum(quantity)/count(distinct order_id),2) as avg_pizza_per_order from pizza_sale;
+
+# business analysis
+#10
+select pizza_category, sum(total_price) as revenue from pizza_sale
+group by pizza_category
+order by revenue desc;
+
+#11
+select  pizza_category ,sum(quantity) as pizza_sold from pizza_sale
+group by pizza_category
+order by pizza_sold desc;
+
+#12
+select pizza_category,count(distinct order_id) as orders from pizza_sale
+group by pizza_category
+order by orders desc;
+
+#13
+select pizza_category, round(100*sum(total_price)/(select sum(total_price) from pizza_sale),2) as avg_pct from pizza_sale
+group by pizza_category
+order by avg_pct desc;
+
+#size
+#14
+select pizza_size,sum( total_price) as revenue_by_size from pizza_sale
+group by pizza_size
+order by revenue_by_size desc;
+
+#15
+select pizza_size,sum(quantity) as quantity_by_size from pizza_sale
+group by pizza_size
+order by quantity_by_size;
+
+#16
+select pizza_size, round(100*sum(total_price)/(select sum(total_price) from pizza_sale),2) as revenue_pct from pizza_sale
+group by pizza_size
+order by revenue_pct desc;
+
+#product
+#17
+select pizza_name, sum(total_price) as revenue_by_name from pizza_sale
+group by pizza_name
+order by revenue_by_name desc
+limit 5;
+
+#18
+select pizza_name, sum(total_price) as revenue_by_name_min from pizza_sale
+group by pizza_name
+order by revenue_by_name_min
+limit 5;
+
+#19
+select pizza_name, sum(quantity) as quantity from pizza_sale
+group by pizza_name
+order by quantity desc limit 5;
+
+#2O
+select pizza_name ,round(avg(unit_price),2) as avg_prce from pizza_sale
+group by pizza_name
+order by avg_prce desc limit 1;
+
+# TIME
+#21
+select month(order_date) as month, sum(total_price) as mnt_revenue from pizza_sale
+group by month
+order by month,mnt_revenue ;
+
+#22
+select month(order_date) as month, count(distinct order_id) as mnt_order from pizza_sale
+group by month
+order by month,mnt_order;
+
+#23
+select order_date,sum(total_price) as dly_revenue from pizza_sale
+group by order_date
+order by order_date;
+
+#24
+SELECT DAYNAME(order_date) day_name,COUNT(DISTINCT order_id) as orders FROM pizza_sale
+GROUP BY DAYOFWEEK(order_date),DAYNAME(order_date) ORDER BY DAYOFWEEK(order_date);
+
+#25
+SELECT DAYNAME(order_date) day_name,sum(total_price) as revnue_week_day FROM pizza_sale
+GROUP BY DAYOFWEEK(order_date),DAYNAME(order_date) ORDER BY DAYOFWEEK(order_date);
+
+#26
+select hour(order_time) as ordr_hur ,count(distinct order_id)as orders from pizza_sale
+group by ordr_hur
+order by ordr_hur desc;
+
+#27
+select hour(order_time) as ordr_hur, sum(total_price) as revnue_bytime from pizza_sale
+group by ordr_hur
+order by ordr_hur;
+
+#28
+SELECT pizza_name,
+       SUM(total_price) AS revenue
+FROM pizza_sale
+GROUP BY pizza_name
+HAVING SUM(total_price) > (
+    SELECT AVG(revenue)
+    FROM (
+        SELECT SUM(total_price) AS revenue
+        FROM pizza_sale
+        GROUP BY pizza_name
+    ) AS x
+)
+ORDER BY revenue DESC;
+
+#29
+select pizza_name,pizza_category ,revenue from( select pizza_name,pizza_category,sum(total_price) as revenue,
+rank() over(partition by pizza_category order by sum(total_price) desc) rnk from pizza_sale
+group by pizza_category ,pizza_name )x where rnk =1;
+
+#30
+select pizza_name, sum(total_price) as revenue,
+rank() over (order by sum(total_price) desc) as rvnue_rnk from pizza_sale group by pizza_name;
+
+#31
+ with m as (select date_format(order_date,'%Y-%m-01') as month_start,sum(total_price) as revenue from pizza_sale
+ group by date_format(order_date,'%Y-%m-01'))
+ select month_start, round(revenue,2)revenue, round(lag(revenue)over(order by month_start),2) as previous_revenue, 
+round(revenue-lag(revenue) over (order by month_start),2)  change_amount from m order by month_start;
+
+#31
+SELECT pizza_category,pizza_name,revenue FROM (SELECT pizza_category,pizza_name,ROUND(SUM(total_price),2) revenue,
+DENSE_RANK() OVER(PARTITION BY pizza_category ORDER BY SUM(total_price) DESC) rnk FROM pizza_sale
+GROUP BY pizza_category,pizza_name)x WHERE rnk<=3 
+ORDER BY pizza_category,revenue DESC;
+
+#bi
+#32
+select sum(total_price) as total_revenue,count(distinct order_id) as total_order,sum(quantity) as pizza_sold,
+round( sum(total_price)/count(distinct  order_id),2)as avg_revnue from pizza_sale;
+
+#33
+select date_format(order_date,'%y-%m') as months, sum(total_price) as revenue,
+ count(distinct order_id) as orders, sum(quantity) as pizza_orders  from pizza_sale
+ group by date_format(order_date,'%y-%m') order by months;
+ 
+ #34
+  select date_format(order_date,'%M')as month, sum(total_price) as revenue from pizza_sale
+  group by month order by revenue desc
+  limit 1;
+  
+  #35
+select order_date, sum(total_price) as revenue from pizza_sale
+  group by order_date order by revenue desc
+  limit 1;
+  
+  #36
+  select hour(order_time) as ordr_time, count(distinct order_id) as ordr from pizza_sale
+  group by hour(order_time)
+  order by ordr desc
+  limit 1;
+  
+  #37
+  select pizza_category ,sum(total_price) as revenue, pizza_size from pizza_sale
+  group by pizza_category,pizza_size
+  order by revenue desc;
+  
+  #38
+  SELECT pizza_category,SUM(total_price) AS total_revenue,
+    SUM(quantity) AS total_pizzas,ROUND(SUM(total_price) / SUM(quantity), 2) AS revenue_per_pizza FROM pizza_sale
+GROUP BY pizza_category ORDER BY revenue_per_pizza DESC;
+
+#39
+select order_id ,sum(quantity) as orders from pizza_sale
+  group by order_id
+  having orders >2
+  order by orders;
+  
