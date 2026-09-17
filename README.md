@@ -86,7 +86,7 @@ The dashboard analyzes:
 pizza-sales-powerbi-sql/
 │
 ├── Dataset/
-│   └── pizza_sales_7000.csv
+│   └── pizza_sales.csv
 │
 ├── PowerBI/
 │   └── Pizza Sales Analysis.pbix
